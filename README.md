@@ -1,6 +1,6 @@
-# L-MAP
+# L-MAC
 
-L-MAP 是一个基于 LLM 的特征选择与规则生成框架。通过结合传统特征选择方法（如 Lasso、IG、mRMR）与大语言模型的推理能力，L-MAP 可用于：
+L-MAP 是一个基于 LLM 的特归因生成框架。包含特征选择方法（如 Lasso、IG、mRMR）的实现。L-MAC 可用于：
 * 特征归因与聚合
 * 归因引导预测
 * 模型评估
@@ -36,7 +36,7 @@ python main.py --model 'gpt4o' --setting 'summary' --data_date_version '20250401
 OPENAI_API_KEY = "your-api-key"
 ```
 
-### L-MAP 会输出：
+### L-MAC 会输出：
 * LLM 生成的素材级别归因
 * 聚合后的全局归因
 * 归因引导的新素材表现预测
