@@ -30,6 +30,7 @@ def main():
     parser.add_argument("--mapping_IsErrorLoss", type=int, default=1)
 
     parser.add_argument("--isScore", type=int, default=0)
+    parser.add_argument("--prompt_version", type=int, default=0)
     
     args = parser.parse_args()
     
@@ -94,7 +95,7 @@ def main():
             print(" === skip rule generation stage ===")
         else:
             print("=== start rule generation stage ===")
-            run_rule_generation(llm_client, PROMPT_SETTING)
+            run_rule_generation(llm_client, PROMPT_SETTING, prompt_version=args.prompt_version)
 
     if run_all or 'merging' in stages_to_run:
         if PROMPT_SETTING not in ["scoring", "ranking", "summary"]:

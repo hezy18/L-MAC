@@ -46,8 +46,49 @@ def generate_level_descrption(pred_num:int):
     level_description += f' click volume, level 1 is worst performance (bottom {generate_percentile_description(1, pred_num)}), level {pred_num} is best performance (top {generate_percentile_description(pred_num, pred_num)})'
     return level_description
 
-def construct_instruction_prompt(feature_list: str, feature_num: int, summary: str = '', setting: str = 'scoring',phrase: str = 'train'):
+def prompt_variation(version=1,setting='scoring'):
+    # This function can be expanded to generate different prompt variations based on specific requirements or settings.
+    if version == 1:
+        TRAINING_INSTRUCTION_BODY = f"You are an expert in analyzing advertisement performance. For each input ad and the corresponding image(in the given order), evaluate how its appearance and {feature_num} features (listed below in order) affect its Daily New Users (DNU) percentile ranking (e.g., 'top X%' or 'bottom Y%-Z%') in the specified region. Feature list: {feature_list}. "
+        
+    elif version == 2:
+        TRAINING_INSTRUCTION_BODY = f"You are an expert in analyzing advertisement performance. For each input ad and the corresponding image(in the given order), analyze how its appearance and {feature_num} features (listed below in order) affect its Daily New Users (DNU) percentile ranking (e.g., 'top X\%' or 'bottom Y\%-Z\%') in the specified region. Feature list: {feature_list}. "
+        TRAINING_INSTRUCTION_COMMAND = {
+            'ranking':
+            """Rank the features by their impact on DNU from most important to least important. The ranking should reflect each feature’s relative contribution to DNU. Generate a JSON dict with {`ad_id`: Input ad ID (e.g., 3001), `features ranking list`: [`most_important_feature`, `second_most_important`, ..., `least_important_feature`] }. """
+            ,
+                'scoring':
+            """Provide a list of integer scores ranging from 1 to 100, one score per feature, indicating its impact on DNU, ordered according to the feature list. Generate a JSON dict with {`ad_id`: Input ad ID (e.g., 3001),`importance_scores`: A list of each feature's score (integer from 1 to 100), ordered as the feature list above.  """
+            ,
+                'summary':
+            """Generate a brief summary identifying the most and least important features that affect DNU performance. """
+        }
+        TRAINING_INSTRUCTION_FINAL = """(2) Visual Characteristics of High-Performing Ads: Describe visual aspects associated with stronger performance.
+        Return a list of dicts: [\{"AdID": xx, "feature important": "...", "visual analysis": "..."\}, ...]
+        Following are the inputs.\n"""
+        
+    elif version == 3:
+        TRAINING_INSTRUCTION_BODY = f"You are an expert in analyzing advertisement performance. For each input ad and the corresponding image(in the given order), your task is to estimate how each feature({feature_num} features, listed below in order) and the visual appearance contribute to its Daily New Users (DNU) percentile ranking (e.g., 'top X\%' or 'bottom Y\%-Z\%') in the specified region. Feature list: {feature_list}. "
+        TRAINING_INSTRUCTION_COMMAND = {
+            'ranking':
+            """Rank the features by their relative importance in determining DNU, from most important to least important. The ranking should reflect each feature’s contribution to DNU. Generate a JSON dict with {`ad_id`: Input ad ID (e.g., 3001), `features ranking list`: [`most_important_feature`, `second_most_important`, ..., `least_important_feature`] }. """
+            ,
+                'scoring':
+            """Assign an integer score from 1 to 100 to each feature, indicating its relative importance in determining DNU. Follow the order of the feature list. Generate a JSON dict with {`ad_id`: Input ad ID (e.g., 3001),`importance_scores`: A list of each feature's score (integer from 1 to 100), ordered as the feature list above.  """
+            ,
+                'summary':
+            """Generate a brief summary identifying the most and least important features in determining DNU. Return a concise textual summary."""
+        }
+        TRAINING_INSTRUCTION_FINAL = """(2) Visual Characteristics of High-Performing Ads: Describe visual elements associated with higher-performing ads. 
+        Return a list of dicts: [\{"AdID": xx, "feature important": "...", "visual analysis": "..."\}, ...]
+        Following are the inputs.\n"""
+        
+    return TRAINING_INSTRUCTION_BODY + TRAINING_INSTRUCTION_COMMAND[setting] + TRAINING_INSTRUCTION_FINAL
+
+def construct_instruction_prompt(feature_list: str, feature_num: int, summary: str = '', setting: str = 'scoring',phrase: str = 'train',prompt_version:int=0):
     if phrase == 'train':
+        if prompt_version>0:
+            return prompt_variation(prompt_version, setting=setting)
         TRAINING_INSTRUCTION_BODY = f"You are an expert in analyzing advertisement performance. For each input ad, analyze how its {feature_num} features (listed below in order) contribute to its Daily New Users (DNU) percentile ranking (e.g., 'top X%' or 'bottom Y%-Z%') in the specified region. Feature list: {feature_list}. "
         TRAINING_INSTRUCTION_COMMAND= {
             'ranking':
@@ -114,8 +155,8 @@ feature_num = len(FEATURES)
 SUMMARY_INSTRUCTION = "You are a seasoned expert specializing in advertisement performance analysis, with deep expertise in identifying core influencing factors of ad performance, extracting universal patterns from multi-case data, and delivering structured, actionable insights. Please summarize your analysis in two parts: (1) Feature Importance Ranking and Impact Direction: List the most significant features in order of importance, and briefly note whether each feature has a positive or negative impact on performance. (2) Visual Characteristics of High-Performing Ads: Describe the common visual traits of ads that perform better. The input cases are as follows: \n"
 SUMMARY_INSTRUCTION = "You are a seasoned expert specializing in advertisement performance analysis, with deep expertise in identifying core influencing factors of ad performance, extracting universal patterns from multi-case data, and delivering structured, actionable insights. Please summarize your analysis for Feature Importance Ranking and Impact Direction: List the most significant features in order of importance, and briefly note whether each feature has a positive or negative impact on performance. The input cases are as follows: \n"
 
-def build_training_prompt(input_data: str, setting: str='scoring') -> str:
-    return construct_instruction_prompt(feature_list, feature_num, setting=setting, phrase='train') + input_data
+def build_training_prompt(input_data: str, setting: str='scoring', prompt_version: int=0) -> str:
+    return construct_instruction_prompt(feature_list, feature_num, setting=setting, phrase='train', prompt_version=prompt_version) + input_data
 
 def build_inference_prompt(input_data: str, summary, setting: str='scoring') -> str:
     return construct_instruction_prompt(feature_list, feature_num, summary = summary, setting=setting, phrase='test') + input_data

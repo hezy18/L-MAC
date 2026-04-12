@@ -8,7 +8,7 @@ from llm.prompt_builder import build_training_prompt
 from llm.output_constrain import check_data_format
 from utils.file_utils import check_file_exists, extract_ad_images
 
-def run_rule_generation(llm_client: LLMClient, setting: str='scoring'): # setting = 'scoring' or 'ranking' or 'summary'
+def run_rule_generation(llm_client: LLMClient, setting: str='scoring', prompt_version:int=0): # setting = 'scoring' or 'ranking' or 'summary'
     training_data = load_train_input()
     
     error_keys = []
@@ -18,7 +18,7 @@ def run_rule_generation(llm_client: LLMClient, setting: str='scoring'): # settin
         if check_file_exists(os.path.join(DATA_PATH['train_result_dir'], f"{key}.txt")):
             continue
         
-        prompt = build_training_prompt(training_data[key], setting=setting)
+        prompt = build_training_prompt(training_data[key], setting=setting, prompt_version=prompt_version)
         
         print(f'Try {LLM_MODEL}. Prompt: {prompt}')
         
